@@ -1,0 +1,37 @@
+﻿@inject LatencyService.LatencyServiceClient GrpcClient
+@using Latency;
+
+<div>
+    <h3>🚀 Test Latence gRPC</h3>
+
+    <div>
+        <h5>Message à envoyer</h5>
+        <input @bind="messageText" class="form-control" placeholder="Entrez un message..." />
+        <button class="btn btn-primary mt-2" @onclick="SendMessage">Envoyer pour 1 message</button>
+
+        @if (response != null)
+        {
+            <p><strong>Envoyé :</strong> @response.SentAt.ToDateTime().ToLocalTime().ToString("HH:mm:ss.fff")</p>
+            <p><strong>Reçu :</strong> @response.ReceivedAt.ToDateTime().ToLocalTime().ToString("HH:mm:ss.fff")</p>
+            <p><strong>Latence :</strong> @((response.ReceivedAt.ToDateTime() - response.SentAt.ToDateTime()).TotalMilliseconds.ToString("F2")) ms</p>
+        }
+    </div>
+</div>
+
+
+@code {
+    private string messageText = "";
+    private MessageResponse? response;
+
+    private async Task SendMessage()
+    {
+        var msg = new MessageInfo
+        {
+            Id = Guid.NewGuid().ToString(),
+            SentContent = messageText,
+            SentAt = Timestamp.FromDateTime(DateTime.UtcNow)
+        };
+
+        response = await GrpcClient.SendMessageAsync(msg);
+    }
+}

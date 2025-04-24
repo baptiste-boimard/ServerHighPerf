@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerHP.WebSocketServer", "ServerHP.WebSocketServer\ServerHP.WebSocketServer.csproj", "{C3F04B2B-0537-45A8-9513-4A95FE17B0BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerHP.Client", "ServerHP.Client\ServerHP.Client.csproj", "{B5EC33DE-1B8F-4CA0-BF53-F437DFB3680A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerHP.GrpcServer", "ServerHP.GrpcServer\ServerHP.GrpcServer.csproj", "{88353CEF-0609-42D9-925F-DFAE283E1763}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C3F04B2B-0537-45A8-9513-4A95FE17B0BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3F04B2B-0537-45A8-9513-4A95FE17B0BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3F04B2B-0537-45A8-9513-4A95FE17B0BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3F04B2B-0537-45A8-9513-4A95FE17B0BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5EC33DE-1B8F-4CA0-BF53-F437DFB3680A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5EC33DE-1B8F-4CA0-BF53-F437DFB3680A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5EC33DE-1B8F-4CA0-BF53-F437DFB3680A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5EC33DE-1B8F-4CA0-BF53-F437DFB3680A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88353CEF-0609-42D9-925F-DFAE283E1763}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88353CEF-0609-42D9-925F-DFAE283E1763}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88353CEF-0609-42D9-925F-DFAE283E1763}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88353CEF-0609-42D9-925F-DFAE283E1763}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

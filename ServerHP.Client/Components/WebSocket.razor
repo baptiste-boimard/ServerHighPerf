@@ -1,0 +1,354 @@
+﻿@using System.Collections.Concurrent
+@using System.Net.WebSockets
+@using System.Text
+@using System.Text.Json
+<div>
+    <h3>🧦 Test de Latence WebSocket</h3>
+
+    <div class="card p-3 mb-4">
+        <h5>Message à envoyer</h5>
+        <input @bind="messageText" placeholder="Entrez un message..." class="form-control" />
+        <button @onclick="SendMessage" class="btn btn-primary mt-2">Envoyer pour 1 message</button>
+        
+        @if (message != null)
+        {
+            <p class="mt-3"><strong>Envoyé à:</strong> @message.SentAt?.ToLocalTime().ToString("HH:mm:ss.fff")</p>
+            <p><strong>Reçu à:</strong> @message.ReceivedAt?.ToLocalTime().ToString("HH:mm:ss.fff")</p>
+            <p><strong>Latence:</strong> @message.Latency?.TotalMilliseconds.ToString("F2") ms</p>
+        }
+    </div>
+
+    <div class="card p-3">
+        <h5>Simulation de X clients</h5>
+        <div class="d-flex gap-2">
+            <input @bind="numberOfClients" type="number" min="1" class="form-control" />
+            <button @onclick="StartSimulation" class="btn btn-success">Lancer</button>
+            <button @onclick="StopSimulation" class="btn btn-danger ms-2">Stop</button>
+        </div>
+        <p> Attention forte dégradation des performance à partir de 1000 clients</p>
+        <p class="mt-2">Clients actifs : @activeClients</p>
+    </div>
+
+    @if (isStopping)
+    {
+        <div class="alert alert-warning mt-2" role="alert">
+            ⏳ Arrêt en cours... Attention plus le nombre de clients est élevé, plus l'arrêt peut être long.
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-3" role="alert">
+            🚨 <strong>Surcharge système détectée :</strong> <br />
+            Il est possible que le serveur ne supporte pas autant de connexions simultanées.
+        </div>
+    }
+
+    <div class="mt-3">
+        <h6>Messages reçus :</h6>
+        <div style="max-height: 350px; overflow-y: auto; border: 1px solid #ccc;">
+            <table class="table table-sm table-striped mb-0">
+                <thead class="table-light" style="position: sticky; top: 0; background: white;">
+                <tr>
+                    <th scope="col" style="width: 80px">Client</th>
+                    <th scope="col" style="width: 150px">Message</th>
+                    <th scope="col" style="width: 150px">Envoyé</th>
+                    <th scope="col" style="width: 150px">Reçu</th>
+                    <th scope="col" style="width: 150px">Latence (ms)</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var msg in receivedMessages.Take(100))
+                {
+                    <tr>
+                        <td>@msg.Id.ToString().Substring(0, 8)</td>
+                        <td>@msg.SentContent</td>
+                        <td>@msg.SentAt?.ToLocalTime().ToString("HH:mm:ss.fff")</td>
+                        <td>@msg.ReceivedAt?.ToLocalTime().ToString("HH:mm:ss.fff")</td>
+                        <td>@msg.Latency?.TotalMilliseconds.ToString("F2")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (receivedMessages.Count > 0)
+    {
+        <div class="mt-3">
+            <h6>Statistiques des latences</h6>
+            <ul>
+                <li><strong>Moyenne :</strong> @AverageLatency?.ToString("F2") ms</li>
+                <li><strong>Médiane :</strong> @MedianLatency?.ToString("F2") ms</li>
+                <li><strong>Min :</strong> @MinLatency?.ToString("F2") ms</li>
+                <li><strong>Max :</strong> @MaxLatency?.ToString("F2") ms</li>
+            </ul>
+        </div>
+    }
+</div>
+
+
+@* <div class="mt-3"> *@
+@*     <h6>Statistiques générales</h6> *@
+@*     <ul> *@
+@*         <li><strong>Messages envoyés :</strong> @totalMessagesSent</li> *@
+@*         <li><strong>Messages reçus :</strong> @totalMessagesReceived</li> *@
+@*         <li><strong>Perdus :</strong> @(totalMessagesSent - totalMessagesReceived)</li> *@
+@*         <li><strong>Taux de perte :</strong> @((totalMessagesSent > 0 ? ((double)(totalMessagesSent - totalMessagesReceived) / totalMessagesSent) * 100 : 0).ToString("F2")) %</li> *@
+@*     </ul> *@
+@* </div> *@
+
+
+@code {
+    // Partie test unique
+    private string messageText = "";
+    private MessageInfoWebSocket? message;
+    private ClientWebSocket? socket;
+    
+    private List<MessageInfoWebSocket> receivedMessages = new();
+    private object listLock = new();
+    private string? errorMessage = null;
+    private bool isStopping = false;
+
+
+
+    private CancellationTokenSource? cts;
+    private ConcurrentDictionary<int, ClientWebSocket> clientSockets = new();
+    
+    private double? AverageLatency => receivedMessages.Count > 0
+        ? receivedMessages.Average(m => m.Latency?.TotalMilliseconds ?? 0)
+        : null;
+
+    private double? MinLatency => receivedMessages.Count > 0
+        ? receivedMessages.Min(m => m.Latency?.TotalMilliseconds ?? 0)
+        : null;
+
+    private double? MaxLatency => receivedMessages.Count > 0
+        ? receivedMessages.Max(m => m.Latency?.TotalMilliseconds ?? 0)
+        : null;
+
+    private double? MedianLatency
+    {
+        get
+        {
+            var values = receivedMessages
+                .Select(m => m.Latency?.TotalMilliseconds ?? 0)
+                .OrderBy(v => v)
+                .ToList();
+
+            if (values.Count == 0) return null;
+
+            if (values.Count % 2 == 0)
+                return (values[values.Count / 2 - 1] + values[values.Count / 2]) / 2;
+            else
+                return values[values.Count / 2];
+        }
+    }
+
+    // private int totalMessagesSent = 0;
+    // private int totalMessagesReceived = 0;
+    
+    // Partie simulation
+    private int numberOfClients = 10;
+    private int activeClients = 0;
+    private List<Task> runningClients = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        socket = new ClientWebSocket();
+        await socket.ConnectAsync(new Uri("ws://localhost:5287/ws"), CancellationToken.None);
+    }
+
+    private async Task SendMessage()
+    {
+        if (socket?.State == WebSocketState.Open)
+        {
+            var msg = new MessageInfoWebSocket
+            {
+                Id = Guid.NewGuid(),
+                SentContent = messageText,
+                SentAt = DateTime.UtcNow
+            };
+
+            var json = JsonSerializer.Serialize(msg);
+            var bytes = Encoding.UTF8.GetBytes(json);
+
+            await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+
+            var buffer = new byte[1024 * 64];
+            var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+
+            message = JsonSerializer.Deserialize<MessageInfoWebSocket>(responseJson);
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartSimulation()
+    {
+        isStopping = false;
+        errorMessage = null;
+        StateHasChanged();
+
+        // totalMessagesSent = 0;
+        // totalMessagesReceived = 0;
+
+        lock (listLock)
+        {
+            receivedMessages.Clear();
+        }
+
+        runningClients = new List<Task>();
+        clientSockets = new ConcurrentDictionary<int, ClientWebSocket>();
+        cts = new CancellationTokenSource(); 
+        activeClients = 0;
+
+        for (int i = 0; i < numberOfClients; i++)
+        {
+            try
+            {
+                runningClients.Add(SimulateClient(i, cts.Token));
+                activeClients++;
+                await Task.Delay(5); // Laisse un peu de souffle
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Erreur au démarrage du client {i} : {ex.Message}";
+                break;
+            }
+        }
+
+        _ = Task.WhenAll(runningClients);
+    }
+
+
+
+    private async Task SimulateClient(int clientId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var socket = new ClientWebSocket();
+            await socket.ConnectAsync(new Uri("ws://localhost:5287/ws"), cancellationToken);
+            clientSockets.TryAdd(clientId, socket);
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var msg = new MessageInfoWebSocket
+                {
+                    Id = Guid.NewGuid(),
+                    SentContent = $"Client {clientId} - Ping",
+                    SentAt = DateTime.UtcNow
+                };
+
+                var json = JsonSerializer.Serialize(msg);
+                var bytes = Encoding.UTF8.GetBytes(json);
+                
+                // Interlocked.Increment(ref totalMessagesSent);
+
+                await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cancellationToken);
+
+                var buffer = new byte[1024];
+                var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+                var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+
+                var received = JsonSerializer.Deserialize<MessageInfoWebSocket>(responseJson);
+                
+                if (received == null)
+                {
+                    Console.WriteLine($"❌ Erreur de désérialisation. JSON = {responseJson}");
+                    continue; // Ne bloque pas la boucle
+                }
+                
+                // Interlocked.Increment(ref totalMessagesReceived);
+                
+                lock (listLock)
+                {
+                    if (received != null)
+                        receivedMessages.Insert(0, received); // Derniers en haut
+                    
+                    // if (receivedMessages.Count > 200) // limite "saine"
+                    //     receivedMessages.RemoveAt(receivedMessages.Count - 1);
+                }
+                InvokeAsync(StateHasChanged);
+
+
+                await Task.Delay(1000, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur critique (client {clientId}) : {ex.Message}";
+            Console.WriteLine($"Client {clientId} - Crash : {ex.Message}");
+
+            if (!isStopping) // Pour éviter de déclencher plusieurs fois
+            {
+                StopSimulation();
+            }
+
+            InvokeAsync(StateHasChanged);
+        }
+        finally
+        {
+            if (clientSockets.TryRemove(clientId, out var socket))
+            {
+                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Fin de simulation", CancellationToken.None);
+                socket.Dispose();
+            }
+
+            activeClients--;
+            InvokeAsync(StateHasChanged);
+            
+            if (isStopping && activeClients == 0)
+            {
+                isStopping = false;
+                InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+    
+    private void StopSimulation()
+    {
+        isStopping = true;
+        // Ce délai permet d'afficher le message d'arrêt en cours même si les clients chutent vite
+        Task.Run(async () =>
+        {
+            await Task.Delay(50); // Laisse Blazor un petit temps pour rafraîchir
+            InvokeAsync(StateHasChanged);
+        });
+        
+        
+        if (cts != null)
+        {
+            try
+            {
+                cts.Cancel(); // 🛡️ si pas déjà annulé
+            }
+            catch (ObjectDisposedException) { }
+
+            try
+            {
+                cts.Dispose();
+            }
+            catch { }
+
+            cts = null; // 🔁 cts sera recréé proprement dans StartSimulation()
+        }
+
+        foreach (var kv in clientSockets)
+        {
+            try
+            {
+                kv.Value.CloseAsync(WebSocketCloseStatus.NormalClosure, "Stop", CancellationToken.None).Wait();
+                kv.Value.Dispose();
+            }
+            catch { /* Silence */ }
+        }
+
+        clientSockets.Clear();
+    }
+
+
+}
