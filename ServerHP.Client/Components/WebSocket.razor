@@ -6,46 +6,83 @@
     <h3>🧦 Test de Latence WebSocket</h3>
 
     <div class="card p-3 mb-4">
-        <h5>Message à envoyer</h5>
-        <input @bind="messageText" placeholder="Entrez un message..." class="form-control" />
-        <button @onclick="SendMessage" class="btn btn-primary mt-2">Envoyer pour 1 message</button>
+        <h4>Message à envoyer</h4>
+        <div style="display: flex; flex-direction: row">
+            <div style="display: flex; flex-direction: column; align-items: flex-start">
+                <input @bind="messageText" placeholder="Entrez un message..." class="form-control" style="width: 300px; height: 100px" />
+                <button @onclick="SendMessage" class="btn btn-primary mt-2">Envoyer 1 message</button>
+            </div>
 
-        <p class="text-muted mt-1">📦 Taille du message : <strong>@MessageSizeBytes</strong> octets</p>
+            <div style="display: flex; flex-direction: column; margin-left: 1rem">
+                <p class="text-muted mt-1">📦 Taille du message : <strong>@MessageSizeBytes</strong> octets</p>
 
-
-        @if (message != null)
-        {
-            <p class="mt-3"><strong>Envoyé à:</strong> @message.SentAt?.ToLocalTime().ToString("HH:mm:ss.fff")</p>
-            <p><strong>Reçu à:</strong> @message.ReceivedAt?.ToLocalTime().ToString("HH:mm:ss.fff")</p>
-            <p><strong>Latence:</strong> @message.Latency?.TotalMilliseconds.ToString("F2") ms</p>
-        }
+                @if (message != null)
+                {   <div style="display: flex; flex-direction: row; gap: 1rem">
+                        <p class="mt-3"><strong>Envoyé à:</strong> @message.SentAt?.ToLocalTime().ToString("HH:mm:ss.fff")</p>
+                        <p><strong>Reçu à:</strong> @message.ReceivedAt?.ToLocalTime().ToString("HH:mm:ss.fff")</p>
+                        <p><strong>Latence:</strong> @message.Latency?.TotalMilliseconds.ToString("F2") ms</p>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
 
-    <div class="card p-3">
-        <h5>Simulation de X clients</h5>
-        <div class="d-flex gap-2">
+    <h4>Simulation de X clients avec le contenu du message</h4>
+    <div class="card p-3 mb-3" style="display: flex; flex-direction: row;">
+        <div class="d-flex gap-2" style="width: 400px">
             <input @bind="numberOfClients" type="number" min="1" class="form-control" />
-            <button @onclick="StartSimulation" class="btn btn-success">Lancer</button>
-            <button @onclick="StopSimulation" class="btn btn-danger ms-2">Stop</button>
+            <button @onclick="StartSimulation" class="btn btn-success">Démarrer</button>
+            <button @onclick="StopSimulation" class="btn btn-danger" disabled="@(!isRunning)">Stop</button>
+            <p class="mt-2">👤 Clients actifs : @activeClients</p>
+            @if (receivedMessages.Count > 0)
+            {
+                <div class="mt-3">
+                    <h6>📈 Statistiques des latences</h6>
+                    <ul>
+                        <li><strong>Moyenne :</strong> @AverageLatency?.ToString("F2") ms</li>
+                        <li><strong>Médiane :</strong> @MedianLatency?.ToString("F2") ms</li>
+                        <li><strong>Min :</strong> @MinLatency?.ToString("F2") ms</li>
+                        <li><strong>Max :</strong> @MaxLatency?.ToString("F2") ms</li>
+                    </ul>
+                </div>
+            }
         </div>
-        <p> Attention forte dégradation des performance à partir de 1000 clients</p>
-        <p class="mt-2">Clients actifs : @activeClients</p>
+        
+        <div style="margin-left: 1rem; display: flex; flex-direction: column; margin-top: -1rem">
+            <p> Attention forte dégradation des performance à partir de 1000 clients</p>
+
+            @if (isStopping)
+            {
+                <div class="alert alert-warning mt-2" role="alert">
+                    ⏳ Arrêt en cours... Attention plus le nombre de clients est élevé, plus l'arrêt peut être long.
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger mt-3" role="alert">
+                    🚨 <strong>Surcharge système détectée :</strong> <br />
+                    Il est possible que le serveur ne supporte pas autant de connexions simultanées.
+                </div>
+            }
+
+            <div style="padding-top: 1rem">
+                <h4>Simulation d'envoi de  X messages d'un coup avec le contenu du message</h4>
+                <input @bind="messageCount" type="number" class="form-control" placeholder="Nombre de messages à envoyer" />
+                <button class="btn btn-warning mt-2" @onclick="SendManyMessages">Envoyer X messages</button>
+
+                @if (totalSendDuration != null)
+                {
+                    <div class="mt-2 alert alert-info">
+                        🕒 Durée totale d'envoi de @messageCount messages : <strong>@totalSendDuration.Value.TotalSeconds.ToString("F2") s</strong>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
+    
 
-    @if (isStopping)
-    {
-        <div class="alert alert-warning mt-2" role="alert">
-            ⏳ Arrêt en cours... Attention plus le nombre de clients est élevé, plus l'arrêt peut être long.
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger mt-3" role="alert">
-            🚨 <strong>Surcharge système détectée :</strong> <br />
-            Il est possible que le serveur ne supporte pas autant de connexions simultanées.
-        </div>
-    }
+    
 
     <div class="mt-3">
         <h6>Messages reçus :</h6>
@@ -76,43 +113,10 @@
         </div>
     </div>
 
-    @if (receivedMessages.Count > 0)
-    {
-        <div class="mt-3">
-            <h6>Statistiques des latences</h6>
-            <ul>
-                <li><strong>Moyenne :</strong> @AverageLatency?.ToString("F2") ms</li>
-                <li><strong>Médiane :</strong> @MedianLatency?.ToString("F2") ms</li>
-                <li><strong>Min :</strong> @MinLatency?.ToString("F2") ms</li>
-                <li><strong>Max :</strong> @MaxLatency?.ToString("F2") ms</li>
-            </ul>
-        </div>
-    }
+    
 
-    <div>
-        <input @bind="messageCount" type="number" class="form-control" placeholder="Nombre de messages à envoyer" />
-        <button class="btn btn-warning mt-2" @onclick="SendManyMessages">Envoyer X messages</button>
 
-        @if (totalSendDuration != null)
-        {
-            <div class="mt-2 alert alert-info">
-                🕒 Durée totale d'envoi de @messageCount messages : <strong>@totalSendDuration.Value.TotalSeconds.ToString("F2") s</strong>
-            </div>
-        }
-    </div>
 </div>
-
-
-@* <div class="mt-3"> *@
-@*     <h6>Statistiques générales</h6> *@
-@*     <ul> *@
-@*         <li><strong>Messages envoyés :</strong> @totalMessagesSent</li> *@
-@*         <li><strong>Messages reçus :</strong> @totalMessagesReceived</li> *@
-@*         <li><strong>Perdus :</strong> @(totalMessagesSent - totalMessagesReceived)</li> *@
-@*         <li><strong>Taux de perte :</strong> @((totalMessagesSent > 0 ? ((double)(totalMessagesSent - totalMessagesReceived) / totalMessagesSent) * 100 : 0).ToString("F2")) %</li> *@
-@*     </ul> *@
-@* </div> *@
-
 
 @code {
     // Partie test unique
@@ -124,6 +128,8 @@
     private object listLock = new();
     private string? errorMessage = null;
     private bool isStopping = false;
+    private bool isRunning = false;
+
 
 
 
@@ -219,6 +225,7 @@
     private async Task StartSimulation()
     {
         isStopping = false;
+        isRunning = true;
         errorMessage = null;
         StateHasChanged();
 
@@ -346,6 +353,7 @@
             if (isStopping && activeClients == 0)
             {
                 isStopping = false;
+                isRunning = false;
                 InvokeAsync(StateHasChanged);
             }
         }
@@ -354,6 +362,8 @@
     private void StopSimulation()
     {
         isStopping = true;
+        isRunning = false;
+
         // Ce délai permet d'afficher le message d'arrêt en cours même si les clients chutent vite
         Task.Run(async () =>
         {

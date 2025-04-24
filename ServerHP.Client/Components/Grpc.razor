@@ -7,35 +7,72 @@
 <div>
     <h3>🚀 Test Latence gRPC</h3>
 
-    <div>
-        <h5>Message à envoyer</h5>
-        <input @bind="messageText" class="form-control" placeholder="Entrez un message..." />
-        <button class="btn btn-primary mt-2" @onclick="SendMessage">Envoyer pour 1 message</button>
+    <div class="card p-3 mb-4">
+        <h4>Message à envoyer</h4>
+        <div style="display: flex; flex-direction: row">
+            <div style="display: flex; flex-direction: column; align-items: flex-start">
+                <input @bind="messageText" class="form-control" placeholder="Entrez un message..." style="width: 300px; height: 100px" />
+                <button class="btn btn-primary mt-2" @onclick="SendMessage">Envoyer 1 message</button>
+            </div>
 
-        <p class="text-muted mt-1">📦 Taille du message : <strong>@MessageSizeBytes</strong> octets</p>
+            <div style="display: flex; flex-direction: column; margin-left: 1rem">
+                <p class="text-muted mt-1">📦 Taille du message : <strong>@MessageSizeBytes</strong> octets</p>
 
-        @if (response != null)
-        {
-            <p><strong>Envoyé :</strong> @response.SentAt.ToDateTime().ToLocalTime().ToString("HH:mm:ss.fff")</p>
-            <p><strong>Reçu :</strong> @response.ReceivedAt.ToDateTime().ToLocalTime().ToString("HH:mm:ss.fff")</p>
-            <p><strong>Latence :</strong> @((response.ReceivedAt.ToDateTime() - response.SentAt.ToDateTime()).TotalMilliseconds.ToString("F2")) ms</p>
-        }
+                @if (response != null)
+                {   <div style="display: flex; flex-direction: row; gap: 1rem">
+                        <p class="mt-3"><strong>Envoyé :</strong> @response.SentAt.ToDateTime().ToLocalTime().ToString("HH:mm:ss.fff")</p>
+                        <p><strong>Reçu :</strong> @response.ReceivedAt.ToDateTime().ToLocalTime().ToString("HH:mm:ss.fff")</p>
+                        <p><strong>Latence :</strong> @((response.ReceivedAt.ToDateTime() - response.SentAt.ToDateTime()).TotalMilliseconds.ToString("F2")) ms</p>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
+    
 
-    <div class="card p-3 mb-3">
-        <h5>Simulation de X clients</h5>
-        <div class="d-flex gap-2">
-            <input @bind="numberOfClients" type="number" min="1" class="form-control" placeholder="Nombre de clients"/>
+    <h4>Simulation de X clients avec le contenu du message</h4>
+    <div class="card p-3 mb-3" style="display: flex; flex-direction: row;">
+        <div class="d-flex gap-2" style="width: 400px">
+            <input @bind="numberOfClients" type="number" min="1" class="form-control"/>
             <button class="btn btn-success" @onclick="StartSimulation">Démarrer</button>
             <button class="btn btn-danger" @onclick="StopSimulation" disabled="@(!isRunning)">Stop</button>
+            <p class="mt-2">👤 Clients actifs : @activeClients</p>
+            @if (receivedMessages.Count > 0)
+            {
+                <div class="mt-3">
+                    <h6>📈 Statistiques des latences</h6>
+                    <ul>
+                        <li><strong>Moyenne :</strong> @AverageLatency?.ToString("F2") ms</li>
+                        <li><strong>Médiane :</strong> @MedianLatency?.ToString("F2") ms</li>
+                        <li><strong>Min :</strong> @MinLatency?.ToString("F2") ms</li>
+                        <li><strong>Max :</strong> @MaxLatency?.ToString("F2") ms</li>
+                    </ul>
+                </div>
+            }
         </div>
-        <p class="mt-2">Clients actifs : @activeClients</p>
+
+        <div style="margin-left: 1rem; display: flex; flex-direction: column">
+            @if (isStopping)
+            {
+                <div class="alert alert-warning">⏳ Arrêt en cours...</div>
+            }
+
+            <div style="padding-top: 2rem">
+                <h4>Simulation d'envoi de  X messages d'un coup avec le contenu du message</h4>
+                <input @bind="messageCount" type="number" class="form-control" placeholder="Nombre de messages à envoyer"/>
+                <button class="btn btn-warning mt-2" @onclick="() => RunLatencyTest(messageCount)">Envoyer X messages</button>
+
+                @if (totalSendDuration != null)
+                {
+                    <div class="mt-2 alert alert-info">
+                        🕒 Durée totale d'envoi de @messageCount messages : <strong>@totalSendDuration.Value.TotalSeconds.ToString("F2") s</strong>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
 
-    @if (isStopping)
-    {
-        <div class="alert alert-warning">⏳ Arrêt en cours...</div>
-    }
+    
 
     <div class="mt-3">
         <h6>📊 Messages reçus :</h6>
@@ -70,30 +107,9 @@
         </div>
     </div>
 
-    @if (receivedMessages.Count > 0)
-    {
-        <div>
-            <h6>📈 Statistiques</h6>
-            <ul>
-                <li><strong>Moyenne :</strong> @AverageLatency?.ToString("F2") ms</li>
-                <li><strong>Médiane :</strong> @MedianLatency?.ToString("F2") ms</li>
-                <li><strong>Min :</strong> @MinLatency?.ToString("F2") ms</li>
-                <li><strong>Max :</strong> @MaxLatency?.ToString("F2") ms</li>
-            </ul>
-        </div>
-    }
+    
 
-    <div>
-        <input @bind="messageCount" type="number" class="form-control" placeholder="Nombre de messages à envoyer" />
-        <button class="btn btn-warning mt-2" @onclick="() => RunLatencyTest(messageCount)">Envoyer X messages</button>
-
-        @if (totalSendDuration != null)
-        {
-            <div class="mt-2 alert alert-info">
-                🕒 Durée totale d'envoi de @messageCount messages : <strong>@totalSendDuration.Value.TotalSeconds.ToString("F2") s</strong>
-            </div>
-        }
-    </div>
+    
 </div>
 
 
