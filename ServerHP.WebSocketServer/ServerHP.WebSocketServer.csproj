@@ -10,9 +10,5 @@
     <ItemGroup>
       <_ContentIncludedByDefault Remove="wwwroot\app.css" />
     </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\ServerHP.Client\ServerHP.Client.csproj" />
-    </ItemGroup>
-
+    
 </Project>

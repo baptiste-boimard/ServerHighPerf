@@ -21,9 +21,5 @@
     <ItemGroup>
         <Protobuf Include="Protos\latency.proto" GrpcServices="Client" />
     </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\ServerHP.GrpcServer\ServerHP.GrpcServer.csproj" />
-    </ItemGroup>
-
+    
 </Project>

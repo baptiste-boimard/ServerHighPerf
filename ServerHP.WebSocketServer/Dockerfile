@@ -4,14 +4,19 @@ EXPOSE 5287
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
-COPY ["ServerHP.WebSocketServer/ServerHP.WebSocketServer.csproj", "ServerHP.WebSocketServer/"]
-RUN dotnet restore "ServerHP.WebSocketServer/ServerHP.WebSocketServer.csproj"
-COPY . .
-WORKDIR "/src/ServerHP.WebSocketServer"
-RUN dotnet build "ServerHP.WebSocketServer.csproj" -c Release -o /app/build
+
+COPY ServerHP.WebSocketServer/ServerHP.WebSocketServer.csproj ServerHP.WebSocketServer/
+
+RUN dotnet restore ServerHP.WebSocketServer/ServerHP.WebSocketServer.csproj
+
+COPY ServerHP.WebSocketServer/ ServerHP.WebSocketServer/
+
+WORKDIR /src/ServerHP.WebSocketServer
+RUN dotnet build ServerHP.WebSocketServer.csproj -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "ServerHP.WebSocketServer.csproj" -c Release -o /app/publish
+WORKDIR /src/ServerHP.WebSocketServer
+RUN dotnet publish ServerHP.WebSocketServer.csproj -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app

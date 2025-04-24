@@ -1,9 +1,11 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using ServerHP.Client;
+using ServerHP.WebSocketServer;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddJsonFile("appsettings.websocket.json", optional: false);
 
 builder.WebHost.ConfigureKestrel(options =>
 {

@@ -3,6 +3,8 @@ using ServerHP.GrpcServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddJsonFile("appsettings.grpc.json", optional: false);
+
 builder.Services.AddGrpc();
 
 builder.WebHost.ConfigureKestrel(options =>

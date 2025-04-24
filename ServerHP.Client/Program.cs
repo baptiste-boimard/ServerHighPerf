@@ -3,10 +3,14 @@ using ServerHP.Client.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(5193); // écoute sur le port 5000
-});
+builder.Configuration.AddJsonFile("appsettings.client.json", optional: false);
+
+builder.WebHost
+    .UseUrls("http://*:5193") // ← ça force Kestrel à utiliser le port 5193
+    .ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(5193); // redondant mais safe
+    });
 
 builder.Services.AddGrpcClient<LatencyService.LatencyServiceClient>(o =>
 {
