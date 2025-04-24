@@ -80,11 +80,10 @@
             <table class="table table-sm table-striped mb-0 text-center">
                 <thead class="table-light" style="position: sticky; top: 0; background: white;">
                 <tr>
-                    <th scope="col" style="width: 80px">Client</th>
-                    <th scope="col" style="width: 150px">Message</th>
-                    <th scope="col" style="width: 150px">Envoyé</th>
-                    <th scope="col" style="width: 150px">Reçu</th>
-                    <th scope="col" style="width: 150px">Latence (ms)</th>
+                    <th scope="col" style="width: 250px">Client</th>
+                    <th scope="col" style="width: 250px">Envoyé</th>
+                    <th scope="col" style="width: 250px">Reçu</th>
+                    <th scope="col" style="width: 250px">Latence (ms)</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -96,7 +95,6 @@
 
                     <tr>
                         <td style="text-align: center;">@msg.Id.Substring(0, 6)</td>
-                        <td style="text-align: center;">@msg.SentContent</td>
                         <td style="text-align: center;">@sent.ToString("HH:mm:ss.fff")</td>
                         <td style="text-align: center;">@received.ToString("HH:mm:ss.fff")</td>
                         <td style="text-align: center;">@latency.ToString("F2")</td>
