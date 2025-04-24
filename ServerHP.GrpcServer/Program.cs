@@ -7,8 +7,9 @@ builder.Services.AddGrpc();
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenLocalhost(5024, o => o.Protocols = HttpProtocols.Http2);
+    options.ListenAnyIP(5024, o => o.Protocols = HttpProtocols.Http2);
 });
+
 var app = builder.Build();
 
 app.MapGrpcService<LatencyServiceImpl>(); 

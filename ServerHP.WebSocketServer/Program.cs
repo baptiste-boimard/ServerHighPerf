@@ -4,6 +4,12 @@ using System.Text.Json;
 using ServerHP.Client;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5287); // ⬅️ autorise toute IP (utile pour Docker ou réseau)
+});
+
 var app = builder.Build();
 
 app.UseWebSockets();
