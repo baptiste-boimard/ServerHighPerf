@@ -175,9 +175,19 @@
 
             await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
 
-            var buffer = new byte[1024 * 64];
-            var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            var buffer = new byte[1024 * 4];
+            using var messageStream = new MemoryStream();
+
+            WebSocketReceiveResult result;
+            do
+            {
+                result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                messageStream.Write(buffer, 0, result.Count);
+            } while (!result.EndOfMessage);
+
+            messageStream.Position = 0;
+            using var reader = new StreamReader(messageStream, Encoding.UTF8);
+            var responseJson = await reader.ReadToEndAsync();
 
             message = JsonSerializer.Deserialize<MessageInfoWebSocket>(responseJson);
             StateHasChanged();
@@ -236,7 +246,7 @@
                 var msg = new MessageInfoWebSocket
                 {
                     Id = Guid.NewGuid(),
-                    SentContent = $"Client {clientId} - Ping",
+                    SentContent = messageText,
                     SentAt = DateTime.UtcNow
                 };
 
@@ -247,9 +257,19 @@
 
                 await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cancellationToken);
 
-                var buffer = new byte[1024];
-                var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
-                var responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                var buffer = new byte[1024 * 4];
+                using var messageStream = new MemoryStream();
+
+                WebSocketReceiveResult result;
+                do
+                {
+                    result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+                    messageStream.Write(buffer, 0, result.Count);
+                } while (!result.EndOfMessage);
+
+                messageStream.Position = 0;
+                using var reader = new StreamReader(messageStream, Encoding.UTF8);
+                var responseJson = await reader.ReadToEndAsync();
 
                 var received = JsonSerializer.Deserialize<MessageInfoWebSocket>(responseJson);
                 
