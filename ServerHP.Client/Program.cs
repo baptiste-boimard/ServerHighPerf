@@ -5,9 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddJsonFile("appsettings.client.json", optional: false);
 
-builder.WebHost
-    .UseUrls("http://*:5193") // ← ça force Kestrel à utiliser le port 5193
-    .ConfigureKestrel(options =>
+builder.WebHost.ConfigureKestrel(options =>
     {
         options.ListenAnyIP(5193); // redondant mais safe
     });

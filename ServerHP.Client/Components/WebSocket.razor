@@ -182,7 +182,7 @@
     protected override async Task OnInitializedAsync()
     {
         socket = new ClientWebSocket();
-        await socket.ConnectAsync(new Uri("ws://localhost:5287/ws"), CancellationToken.None);
+        await socket.ConnectAsync(new Uri("ws://websocket-server:5287/ws"), CancellationToken.None);
     }
 
     private async Task SendMessage()
@@ -265,7 +265,7 @@
         try
         {
             var socket = new ClientWebSocket();
-            await socket.ConnectAsync(new Uri("ws://localhost:5287/ws"), cancellationToken);
+            await socket.ConnectAsync(new Uri("ws://websocket-server:5287/ws"), cancellationToken);
             clientSockets.TryAdd(clientId, socket);
 
             while (!cancellationToken.IsCancellationRequested)

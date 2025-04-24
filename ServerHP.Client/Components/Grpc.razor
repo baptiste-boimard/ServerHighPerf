@@ -129,7 +129,7 @@
     private ConcurrentQueue<MessageResponse> messageQueue = new();
     private List<MessageResponse> receivedMessages = new();
     
-    private static readonly GrpcChannel channel = GrpcChannel.ForAddress("http://localhost:5024");
+    private static readonly GrpcChannel channel = GrpcChannel.ForAddress("http://grpc-server:5024");
     private static readonly LatencyService.LatencyServiceClient sharedClient = new(channel);
 
     private double? AverageLatency
@@ -289,7 +289,7 @@
     
     public async Task RunLatencyTest(int messageCount)
     {
-        using var channel = GrpcChannel.ForAddress("http://localhost:5024");
+        using var channel = GrpcChannel.ForAddress("http://grpc-server:5024");
         var client = new LatencyService.LatencyServiceClient(channel);
 
         using var call = client.StreamLatency();
