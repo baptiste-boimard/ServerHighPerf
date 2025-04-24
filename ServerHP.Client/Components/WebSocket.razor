@@ -85,27 +85,25 @@
     
 
     <div class="mt-3">
-        <h6>Messages reçus :</h6>
-        <div style="max-height: 350px; overflow-y: auto; border: 1px solid #ccc;">
-            <table class="table table-sm table-striped mb-0">
+        <h6>📊 Messages reçus :</h6>
+        <div style="max-height: 250px; overflow-y: auto; border: 1px solid #ccc;">
+            <table class="table table-sm table-striped mb-0 text-center">
                 <thead class="table-light" style="position: sticky; top: 0; background: white;">
                 <tr>
-                    <th scope="col" style="width: 80px">Client</th>
-                    <th scope="col" style="width: 150px">Message</th>
-                    <th scope="col" style="width: 150px">Envoyé</th>
-                    <th scope="col" style="width: 150px">Reçu</th>
-                    <th scope="col" style="width: 150px">Latence (ms)</th>
+                    <th scope="col" style="width: 250px">Client</th>
+                    <th scope="col" style="width: 250px">Envoyé</th>
+                    <th scope="col" style="width: 250px">Reçu</th>
+                    <th scope="col" style="width: 250px">Latence (ms)</th>
                 </tr>
                 </thead>
                 <tbody>
                 @foreach (var msg in receivedMessages.Take(100))
                 {
                     <tr>
-                        <td>@msg.Id.ToString().Substring(0, 8)</td>
-                        <td>@msg.SentContent</td>
-                        <td>@msg.SentAt?.ToLocalTime().ToString("HH:mm:ss.fff")</td>
-                        <td>@msg.ReceivedAt?.ToLocalTime().ToString("HH:mm:ss.fff")</td>
-                        <td>@msg.Latency?.TotalMilliseconds.ToString("F2")</td>
+                        <td style="text-align: center;">@msg.Id.ToString().Substring(0, 8)</td>
+                        <td style="text-align: center;">@msg.SentAt?.ToLocalTime().ToString("HH:mm:ss.fff")</td>
+                        <td style="text-align: center;">@msg.ReceivedAt?.ToLocalTime().ToString("HH:mm:ss.fff")</td>
+                        <td style="text-align: center;">@msg.Latency?.TotalMilliseconds.ToString("F2")</td>
                     </tr>
                 }
                 </tbody>

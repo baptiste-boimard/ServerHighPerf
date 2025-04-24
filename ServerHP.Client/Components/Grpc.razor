@@ -76,8 +76,8 @@
 
     <div class="mt-3">
         <h6>📊 Messages reçus :</h6>
-        <div style="height: 350px; overflow-y: auto; border: 1px solid #ccc;">
-            <table class="table table-sm table-striped mb-0">
+        <div style="max-height: 250px; overflow-y: auto; border: 1px solid #ccc;">
+            <table class="table table-sm table-striped mb-0 text-center">
                 <thead class="table-light" style="position: sticky; top: 0; background: white;">
                 <tr>
                     <th scope="col" style="width: 80px">Client</th>
@@ -95,11 +95,11 @@
                     var latency = (received - sent).TotalMilliseconds;
 
                     <tr>
-                        <td>@msg.Id.Substring(0, 6)</td>
-                        <td>@msg.SentContent</td>
-                        <td>@sent.ToString("HH:mm:ss.fff")</td>
-                        <td>@received.ToString("HH:mm:ss.fff")</td>
-                        <td>@latency.ToString("F2")</td>
+                        <td style="text-align: center;">@msg.Id.Substring(0, 6)</td>
+                        <td style="text-align: center;">@msg.SentContent</td>
+                        <td style="text-align: center;">@sent.ToString("HH:mm:ss.fff")</td>
+                        <td style="text-align: center;">@received.ToString("HH:mm:ss.fff")</td>
+                        <td style="text-align: center;">@latency.ToString("F2")</td>
                     </tr>
                 }
                 </tbody>
@@ -304,7 +304,7 @@
                 var message = new MessageInfo
                 {
                     Id = Guid.NewGuid().ToString(),
-                    SentContent = $"Message {i + 1}",
+                    SentContent = messageText,
                     SentAt = Timestamp.FromDateTime(DateTime.UtcNow)
                 };
 
@@ -314,16 +314,32 @@
             await call.RequestStream.CompleteAsync();
         });
 
+        var tempList = new List<MessageResponse>();
+
         await foreach (var response in call.ResponseStream.ReadAllAsync())
         {
             lastReceivedAt = response.ReceivedAt.ToDateTime();
+            tempList.Add(response);
         }
 
-        await sendTask;
+        var duration = lastReceivedAt - firstSentAt;
+        totalSendDuration = duration;
 
-        totalSendDuration = lastReceivedAt - firstSentAt;
-        await InvokeAsync(StateHasChanged); // ✅ Mets à jour l'affichage
+        // 🔁 Mets à jour la liste principale pour l'affichage et les stats
+        lock (receivedMessages)
+        {
+            foreach (var item in tempList)
+            {
+                receivedMessages.Insert(0, item);
+            }
+
+            while (receivedMessages.Count > 100)
+                receivedMessages.RemoveAt(receivedMessages.Count - 1);
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
+
 
 
 }
