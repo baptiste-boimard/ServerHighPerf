@@ -1,5 +1,6 @@
 ﻿@inject LatencyService.LatencyServiceClient GrpcClient
 @using System.Collections.Concurrent
+@using global::Grpc.Core
 @using global::Grpc.Net.Client
 @using Latency;
 
@@ -10,6 +11,8 @@
         <h5>Message à envoyer</h5>
         <input @bind="messageText" class="form-control" placeholder="Entrez un message..." />
         <button class="btn btn-primary mt-2" @onclick="SendMessage">Envoyer pour 1 message</button>
+
+        <p class="text-muted mt-1">📦 Taille du message : <strong>@MessageSizeBytes</strong> octets</p>
 
         @if (response != null)
         {
@@ -79,6 +82,18 @@
             </ul>
         </div>
     }
+
+    <div>
+        <input @bind="messageCount" type="number" class="form-control" placeholder="Nombre de messages à envoyer" />
+        <button class="btn btn-warning mt-2" @onclick="() => RunLatencyTest(messageCount)">Envoyer X messages</button>
+
+        @if (totalSendDuration != null)
+        {
+            <div class="mt-2 alert alert-info">
+                🕒 Durée totale d'envoi de @messageCount messages : <strong>@totalSendDuration.Value.TotalSeconds.ToString("F2") s</strong>
+            </div>
+        }
+    </div>
 </div>
 
 
@@ -160,6 +175,11 @@
             }
         }
     }
+    
+    private int messageCount = 10;
+    private TimeSpan? totalSendDuration = null;
+    private int MessageSizeBytes => System.Text.Encoding.UTF8.GetByteCount(messageText ?? "");
+
 
 
     private async Task SendMessage()
@@ -250,4 +270,44 @@
         cts?.Dispose();
         cts = null;
     }
+    
+    public async Task RunLatencyTest(int messageCount)
+    {
+        using var channel = GrpcChannel.ForAddress("http://localhost:5024");
+        var client = new LatencyService.LatencyServiceClient(channel);
+
+        using var call = client.StreamLatency();
+
+        var firstSentAt = DateTime.UtcNow;
+        DateTime lastReceivedAt = firstSentAt;
+
+        var sendTask = Task.Run(async () =>
+        {
+            for (int i = 0; i < messageCount; i++)
+            {
+                var message = new MessageInfo
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    SentContent = $"Message {i + 1}",
+                    SentAt = Timestamp.FromDateTime(DateTime.UtcNow)
+                };
+
+                await call.RequestStream.WriteAsync(message);
+            }
+
+            await call.RequestStream.CompleteAsync();
+        });
+
+        await foreach (var response in call.ResponseStream.ReadAllAsync())
+        {
+            lastReceivedAt = response.ReceivedAt.ToDateTime();
+        }
+
+        await sendTask;
+
+        totalSendDuration = lastReceivedAt - firstSentAt;
+        await InvokeAsync(StateHasChanged); // ✅ Mets à jour l'affichage
+    }
+
+
 }

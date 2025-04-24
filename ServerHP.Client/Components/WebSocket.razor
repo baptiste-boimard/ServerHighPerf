@@ -9,7 +9,10 @@
         <h5>Message à envoyer</h5>
         <input @bind="messageText" placeholder="Entrez un message..." class="form-control" />
         <button @onclick="SendMessage" class="btn btn-primary mt-2">Envoyer pour 1 message</button>
-        
+
+        <p class="text-muted mt-1">📦 Taille du message : <strong>@MessageSizeBytes</strong> octets</p>
+
+
         @if (message != null)
         {
             <p class="mt-3"><strong>Envoyé à:</strong> @message.SentAt?.ToLocalTime().ToString("HH:mm:ss.fff")</p>
@@ -85,6 +88,18 @@
             </ul>
         </div>
     }
+
+    <div>
+        <input @bind="messageCount" type="number" class="form-control" placeholder="Nombre de messages à envoyer" />
+        <button class="btn btn-warning mt-2" @onclick="SendManyMessages">Envoyer X messages</button>
+
+        @if (totalSendDuration != null)
+        {
+            <div class="mt-2 alert alert-info">
+                🕒 Durée totale d'envoi de @messageCount messages : <strong>@totalSendDuration.Value.TotalSeconds.ToString("F2") s</strong>
+            </div>
+        }
+    </div>
 </div>
 
 
@@ -152,6 +167,13 @@
     private int numberOfClients = 10;
     private int activeClients = 0;
     private List<Task> runningClients = new();
+    
+    private int messageCount = 10;
+    private TimeSpan? totalSendDuration = null;
+    private int MessageSizeBytes => System.Text.Encoding.UTF8.GetByteCount(messageText ?? "");
+
+
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -370,5 +392,57 @@
         clientSockets.Clear();
     }
 
+    private async Task SendManyMessages()
+    {
+        if (socket?.State == WebSocketState.Open && messageCount > 0)
+        {
+            receivedMessages.Clear();
 
+            var startTime = DateTime.UtcNow;
+
+            for (int i = 0; i < messageCount; i++)
+            {
+                var msg = new MessageInfoWebSocket
+                {
+                    Id = Guid.NewGuid(),
+                    SentContent = messageText,
+                    SentAt = DateTime.UtcNow
+                };
+
+                var json = JsonSerializer.Serialize(msg);
+                var bytes = Encoding.UTF8.GetBytes(json);
+                await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+
+                // Réception
+                using var stream = new MemoryStream();
+                var buffer = new byte[1024 * 4];
+                WebSocketReceiveResult result;
+                do
+                {
+                    result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    stream.Write(buffer, 0, result.Count);
+                } while (!result.EndOfMessage);
+
+                stream.Position = 0;
+                var jsonResponse = Encoding.UTF8.GetString(stream.ToArray());
+                var received = JsonSerializer.Deserialize<MessageInfoWebSocket>(jsonResponse);
+
+                if (received != null)
+                {
+                    lock (listLock)
+                    {
+                        receivedMessages.Insert(0, received);
+                        if (receivedMessages.Count > 100)
+                            receivedMessages.RemoveAt(receivedMessages.Count - 1);
+                    }
+                }
+
+                await InvokeAsync(StateHasChanged);
+            }
+
+            var endTime = DateTime.UtcNow;
+            totalSendDuration = endTime - startTime;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 }

@@ -18,4 +18,23 @@ public class LatencyServiceImpl : LatencyService.LatencyServiceBase
 
         return Task.FromResult(response);
     }
+    
+    public override async Task StreamLatency(
+        IAsyncStreamReader<MessageInfo> requestStream,
+        IServerStreamWriter<MessageResponse> responseStream,
+        ServerCallContext context)
+    {
+        await foreach (var request in requestStream.ReadAllAsync())
+        {
+            var response = new MessageResponse
+            {
+                Id = request.Id,
+                SentContent = request.SentContent,
+                SentAt = request.SentAt,
+                ReceivedAt = Timestamp.FromDateTime(DateTime.UtcNow)
+            };
+
+            await responseStream.WriteAsync(response);
+        }
+    }
 }

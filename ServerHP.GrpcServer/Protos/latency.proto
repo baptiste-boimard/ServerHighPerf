@@ -6,6 +6,8 @@ package latency;
 
 service LatencyService {
   rpc SendMessage (MessageInfo) returns (MessageResponse);
+  rpc StreamLatency (stream MessageInfo) returns (stream MessageResponse);
+
 }
 
 message MessageInfo {
