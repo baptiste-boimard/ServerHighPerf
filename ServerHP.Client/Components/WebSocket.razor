@@ -81,9 +81,6 @@
         </div>
     </div>
     
-
-    
-
     <div class="mt-3">
         <h6>📊 Messages reçus :</h6>
         <div style="max-height: 250px; overflow-y: auto; border: 1px solid #ccc;">
@@ -110,10 +107,7 @@
             </table>
         </div>
     </div>
-
     
-
-
 </div>
 
 @code {
@@ -163,11 +157,7 @@
                 return values[values.Count / 2];
         }
     }
-
-    // private int totalMessagesSent = 0;
-    // private int totalMessagesReceived = 0;
     
-    // Partie simulation
     private int numberOfClients = 10;
     private int activeClients = 0;
     private List<Task> runningClients = new();
@@ -175,9 +165,7 @@
     private int messageCount = 10;
     private TimeSpan? totalSendDuration = null;
     private int MessageSizeBytes => System.Text.Encoding.UTF8.GetByteCount(messageText ?? "");
-
-
-
+    
 
     protected override async Task OnInitializedAsync()
     {
@@ -227,9 +215,6 @@
         errorMessage = null;
         StateHasChanged();
 
-        // totalMessagesSent = 0;
-        // totalMessagesReceived = 0;
-
         lock (listLock)
         {
             receivedMessages.Clear();
@@ -246,7 +231,7 @@
             {
                 runningClients.Add(SimulateClient(i, cts.Token));
                 activeClients++;
-                await Task.Delay(5); // Laisse un peu de souffle
+                await Task.Delay(5);
             }
             catch (Exception ex)
             {
@@ -280,7 +265,6 @@
                 var json = JsonSerializer.Serialize(msg);
                 var bytes = Encoding.UTF8.GetBytes(json);
                 
-                // Interlocked.Increment(ref totalMessagesSent);
 
                 await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cancellationToken);
 
@@ -302,19 +286,15 @@
                 
                 if (received == null)
                 {
-                    Console.WriteLine($"❌ Erreur de désérialisation. JSON = {responseJson}");
-                    continue; // Ne bloque pas la boucle
+                    continue; 
                 }
                 
-                // Interlocked.Increment(ref totalMessagesReceived);
                 
                 lock (listLock)
                 {
                     if (received != null)
-                        receivedMessages.Insert(0, received); // Derniers en haut
+                        receivedMessages.Insert(0, received);
                     
-                    // if (receivedMessages.Count > 200) // limite "saine"
-                    //     receivedMessages.RemoveAt(receivedMessages.Count - 1);
                 }
                 InvokeAsync(StateHasChanged);
 
@@ -328,9 +308,8 @@
         catch (Exception ex)
         {
             errorMessage = $"Erreur critique (client {clientId}) : {ex.Message}";
-            Console.WriteLine($"Client {clientId} - Crash : {ex.Message}");
 
-            if (!isStopping) // Pour éviter de déclencher plusieurs fois
+            if (!isStopping) 
             {
                 StopSimulation();
             }
@@ -362,10 +341,9 @@
         isStopping = true;
         isRunning = false;
 
-        // Ce délai permet d'afficher le message d'arrêt en cours même si les clients chutent vite
         Task.Run(async () =>
         {
-            await Task.Delay(50); // Laisse Blazor un petit temps pour rafraîchir
+            await Task.Delay(50);
             InvokeAsync(StateHasChanged);
         });
         
@@ -374,7 +352,7 @@
         {
             try
             {
-                cts.Cancel(); // 🛡️ si pas déjà annulé
+                cts.Cancel();
             }
             catch (ObjectDisposedException) { }
 
@@ -384,7 +362,7 @@
             }
             catch { }
 
-            cts = null; // 🔁 cts sera recréé proprement dans StartSimulation()
+            cts = null; 
         }
 
         foreach (var kv in clientSockets)
@@ -421,7 +399,6 @@
                 var bytes = Encoding.UTF8.GetBytes(json);
                 await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
 
-                // Réception
                 using var stream = new MemoryStream();
                 var buffer = new byte[1024 * 4];
                 WebSocketReceiveResult result;

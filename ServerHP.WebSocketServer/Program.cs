@@ -9,7 +9,7 @@ builder.Configuration.AddJsonFile("appsettings.websocket.json", optional: false)
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(5287); // ⬅️ autorise toute IP (utile pour Docker ou réseau)
+    options.ListenAnyIP(5287); 
 });
 
 var app = builder.Build();
@@ -22,7 +22,7 @@ app.Map("/ws", async context =>
     {
         using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
         var buffer = new byte[1024 * 64];
-        var ct = context.RequestAborted; // Token pour annulation côté client
+        var ct = context.RequestAborted;
 
         try
         {

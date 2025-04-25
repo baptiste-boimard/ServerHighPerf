@@ -7,7 +7,7 @@ builder.Configuration.AddJsonFile("appsettings.client.json", optional: false);
 
 builder.WebHost.ConfigureKestrel(options =>
     {
-        options.ListenAnyIP(5193); // redondant mais safe
+        options.ListenAnyIP(5193);
     });
 
 builder.Services.AddGrpcClient<LatencyService.LatencyServiceClient>(o =>
@@ -27,7 +27,7 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
-app.UseAntiforgery();     // <-- ajouter CE middleware ici
+app.UseAntiforgery(); 
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
